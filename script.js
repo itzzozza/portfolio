@@ -38,25 +38,65 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set active navigation link based on scroll position
     const sections = document.querySelectorAll('section[id]');
-    const navLinks = document.querySelectorAll('.nav-menu a[href^="#"]');
+    const navLinks = document.querySelectorAll('.nav-menu a');
+    const homeLink = document.querySelector('.nav-menu a[href="index.html"]');
 
     function setActiveNavLink() {
+        const scrollPosition = window.pageYOffset || window.scrollY;
+        const heroHeight = document.querySelector('.hero')?.offsetHeight || 0;
+        
+        // If at the top of the page (in hero section), set Home as active
+        if (scrollPosition < heroHeight - 100) {
+            navLinks.forEach(link => link.classList.remove('active'));
+            if (homeLink) {
+                homeLink.classList.add('active');
+            }
+            return;
+        }
+
+        // Otherwise, find which section is currently in view
         let current = '';
         sections.forEach(section => {
             const sectionTop = section.offsetTop;
             const sectionHeight = section.clientHeight;
-            if (window.pageYOffset >= sectionTop - 200) {
+            if (scrollPosition >= sectionTop - 200) {
                 current = section.getAttribute('id');
             }
         });
 
         navLinks.forEach(link => {
             link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
+            const href = link.getAttribute('href');
+            
+            // Handle Home link
+            if (href === 'index.html' && scrollPosition < heroHeight - 100) {
+                link.classList.add('active');
+            }
+            // Handle anchor links
+            else if (href === `#${current}`) {
                 link.classList.add('active');
             }
         });
     }
+
+    // Update active state when clicking nav links
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            const href = this.getAttribute('href');
+            
+            // Remove active from all links
+            navLinks.forEach(l => l.classList.remove('active'));
+            
+            // If it's the Home link, set it active immediately
+            if (href === 'index.html') {
+                this.classList.add('active');
+            }
+            // For anchor links, set active and let scroll handler update it
+            else if (href.startsWith('#')) {
+                this.classList.add('active');
+            }
+        });
+    });
 
     // Set active link on scroll
     window.addEventListener('scroll', setActiveNavLink);
@@ -77,10 +117,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         top: offsetTop,
                         behavior: 'smooth'
                     });
+                    // Update active state after scroll
+                    setTimeout(setActiveNavLink, 100);
                 }
             }
         });
     });
+
+    // Handle Home link click - scroll to top
+    if (homeLink) {
+        homeLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            // Update active state after scroll
+            setTimeout(setActiveNavLink, 100);
+        });
+    }
 
     // Add fade-in animation on scroll
     const observerOptions = {
