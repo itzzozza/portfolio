@@ -196,3 +196,123 @@ window.addEventListener('scroll', function() {
     // You can add a scroll-to-top button here if needed
 });
 
+// Cursor Smoke Effect
+(function() {
+    let mouseX = 0;
+    let mouseY = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let particles = [];
+    const maxParticles = 50;
+    const particleLifetime = 1800; // milliseconds
+    let lastParticleTime = 0;
+    const particleInterval = 8; // More frequent particle creation
+    
+    // Create smoke container
+    const smokeContainer = document.createElement('div');
+    smokeContainer.className = 'cursor-smoke-container';
+    document.body.appendChild(smokeContainer);
+    
+    // Track mouse movement
+    document.addEventListener('mousemove', function(e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        // Calculate movement distance
+        const deltaX = mouseX - lastX;
+        const deltaY = mouseY - lastY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const currentTime = Date.now();
+        
+        // Create particles more consistently - always create at least 1 if moving
+        if (distance > 0.5 && currentTime - lastParticleTime > particleInterval) {
+            // More particles based on speed, but always at least 1
+            const particleCount = Math.max(1, Math.min(Math.floor(distance / 5), 4));
+            for (let i = 0; i < particleCount; i++) {
+                // Small delay for multiple particles to create trail effect
+                setTimeout(function() {
+                    createSmokeParticle(mouseX, mouseY, distance);
+                }, i * 2);
+            }
+            lastParticleTime = currentTime;
+        }
+        
+        lastX = mouseX;
+        lastY = mouseY;
+    });
+    
+    function createSmokeParticle(x, y, velocity) {
+        // Limit particle count
+        if (particles.length >= maxParticles) {
+            const oldParticle = particles.shift();
+            if (oldParticle && oldParticle.element) {
+                oldParticle.element.remove();
+            }
+        }
+        
+        // Create particle element
+        const particle = document.createElement('div');
+        particle.className = 'smoke-particle';
+        
+        // More organic random offset for natural smoke effect
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 8 + Math.random() * 12;
+        const randomX = Math.cos(angle) * radius;
+        const randomY = Math.sin(angle) * radius - 5; // Slight upward bias
+        
+        // Set initial position (centered on cursor)
+        particle.style.left = (x - 6) + 'px';
+        particle.style.top = (y - 6) + 'px';
+        
+        // Set random animation variables with smoother distribution
+        particle.style.setProperty('--random-x', randomX + 'px');
+        particle.style.setProperty('--random-y', randomY + 'px');
+        
+        // More refined size variation (smaller, more consistent)
+        const size = 10 + Math.random() * 8;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        
+        // Add to container
+        smokeContainer.appendChild(particle);
+        
+        // Store particle info
+        const particleInfo = {
+            element: particle,
+            createdAt: Date.now()
+        };
+        particles.push(particleInfo);
+        
+        // Remove particle after animation
+        setTimeout(function() {
+            if (particle.parentNode) {
+                particle.style.transition = 'opacity 0.2s ease-out';
+                particle.style.opacity = '0';
+                setTimeout(function() {
+                    if (particle.parentNode) {
+                        particle.remove();
+                    }
+                }, 200);
+            }
+            const index = particles.indexOf(particleInfo);
+            if (index > -1) {
+                particles.splice(index, 1);
+            }
+        }, particleLifetime);
+    }
+    
+    // Clean up particles periodically
+    setInterval(function() {
+        const now = Date.now();
+        particles = particles.filter(function(p) {
+            if (now - p.createdAt > particleLifetime) {
+                if (p.element && p.element.parentNode) {
+                    p.element.remove();
+                }
+                return false;
+            }
+            return true;
+        });
+    }, 500);
+})();
+
